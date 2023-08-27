@@ -1,0 +1,14 @@
+#!/usr/bin/env zsh
+declare -r msg=$(< $1);
+title=${msg%%$'\n'*}
+[[ ${#title} -lt 20 ]] && echo 'Please enter a more informative commit message' && exit 1
+[[ ${#title} -gt 50 ]] && echo 'Please keep commit summary below 51 characters' && exit 1
+[[ $msg == wip:[[:space:]]* ]] && exit 0
+[[ $msg == fix:[[:space:]]* ]] && exit 0
+[[ $msg == feat:[[:space:]]* ]] && exit 0
+[[ $msg == feat!:[[:space:]]* ]] && exit 0
+[[ $msg == docs:[[:space:]]* ]] && exit 0
+echo "your commit should begin with fix:, feat:, feat!:, docs:, or wip:"
+echo "dont forget the colon, and the space after it"
+echo "commits prefixed with wip must be squashed before submitting PR"
+exit 1

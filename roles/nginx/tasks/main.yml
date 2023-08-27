@@ -1,0 +1,65 @@
+---
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Check whether a package called ufw is installed
+  ansible.builtin.debug:
+    msg: "{{ ansible_facts.packages['ufw'] | length }} versions of ufw are installed!"
+  when: "'ufw' in ansible_facts.packages"
+
+- name: Allow all access to nginx http/s
+  community.general.ufw:
+    rule: allow
+    name: "{{ item }}"
+  with_items:
+    - "Nginx HTTP"
+    - "Nginx Full"
+  when: (ansible_os_family == "Debian") and ('ufw' in ansible_facts.packages)
+  become: true
+  become_user: root
+
+- name: Ownership of www and nginx to deploy user
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: "{{ macbook_user.stdout }}"
+    group: "{{ macbook_user.stdout }}"
+  when: ansible_os_family == "Debian"
+  become: true
+  become_user: root
+  with_items:
+    - /var/www/html
+    - /etc/nginx/conf.d
+
+- name: Copy nginx html to act as 404 for unconfigured urls
+  copy:
+    src: nginx/404.html
+    dest: /var/www/html/index.nginx-debian.html
+
+- name: copy 403, 404, and 503 error pages to /usr/share/nginx/html
+  copy:
+    src: "{{ item }}"
+    dest: /usr/share/nginx/html
+  with_items:
+    - nginx/403.html
+    - nginx/404.html
+    - nginx/503.html
+  become: true
+  become_user: root
+
+- name: copy custom errors.conf to nginx snippets conf
+  copy:
+    src: nginx/errors.conf
+    dest: /etc/nginx/snippets/errors.conf
+  become: true
+  become_user: root
+
+- name: print role name
+  set_fact:
+    parent_role_name:  "{{ role_name }}"
+
+- name: add version
+  include_role:
+    name: version

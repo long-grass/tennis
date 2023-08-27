@@ -1,0 +1,64 @@
+- name: Copy zshrc
+  template:
+    src: zshrc.j2
+    dest: ~{{ macbook_user.stdout }}/.zshrc
+
+- name: Create zsh directory
+  file:
+    path: "~{{ macbook_user.stdout }}/.zsh"
+    state: directory
+
+- name: Copy main functions file
+  copy:
+    src: zsh/main.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/main.zsh
+
+- name: configure terminal for mac
+  import_tasks: darwin.yml
+  when: ansible_os_family == "Darwin"
+
+- name: configure terminal for pi
+  import_tasks: debian.yml
+  when: ansible_os_family == "Debian"
+
+- name: include git
+  import_tasks: git.yml
+
+- name: Copy godaddy file
+  copy:
+    src: zsh/godaddy.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/godaddy.zsh
+
+- name: Copy supabase file
+  copy:
+    src: zsh/supabase.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/supabase.zsh
+
+- name: Copy colors file
+  copy:
+    src: zsh/colors.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/colors.zsh
+
+- name: Copy macfair file (this machine)
+  template:
+    src: zsh/macfair.zsh.j2
+    dest: ~{{ macbook_user.stdout }}/.zsh/macfair.zsh
+  when: hostvars['localhost']['hostname'].stdout == ansible_hostname
+
+- name: Copy macfair file (other machines)
+  copy:
+    src: zsh/macfair.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/macfair.zsh
+  when: hostvars['localhost']['hostname'].stdout != ansible_hostname
+
+- name: import ci.yml
+  import_tasks: ci.yml
+  when: inventory_hostname == 'github-runner.localhost'
+
+- name: print role name
+  set_fact:
+    parent_role_name: "{{ role_name }}"
+
+- name: add version
+  include_role:
+    name: version

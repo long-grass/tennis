@@ -1,0 +1,83 @@
+---
+- name: Copy darwin
+  copy:
+    src: zsh/darwin.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/darwin.zsh
+
+- name: create empty tokens file only if one doesnt already exist
+  copy:
+    content: ""
+    dest: ~{{ macbook_user.stdout }}/.zsh/tokens.zsh
+    force: no
+
+- name: create trial file for new functions if one doesn't already exist
+  copy:
+    content: "tinker(){\n  echo try out new functions here, not in main file\n}"
+    dest: ~{{ macbook_user.stdout }}/.zsh/_trialling
+    force: no
+
+- name: copy js help file
+  copy:
+    src: help.js
+    dest: ~{{ macbook_user.stdout }}/.zsh/help.js
+
+- name: Register ansible location
+  become: false
+  shell: command python3 -m site --user-base
+  register: python_location
+
+- name: Add ansible to path.
+  lineinfile:
+    path: ~/.zshrc
+    line: export PATH="{{ python_location.stdout }}/bin:$PATH"
+
+- name: register rbenv exists
+  stat:
+    path: ~{{ macbook_user.stdout }}/.rbenv/bin/rbenv
+  register: rbenv
+
+- name: Conditionally Copy zsh rails
+  copy:
+    src: zsh/rails.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/rails.zsh
+  when: rbenv.stat.exists
+
+- name: Conditionally Add rails to zshrc.
+  lineinfile:
+    path: ~/.zshrc
+    line: source $HOME/.zsh/rails.zsh
+  when: rbenv.stat.exists
+
+- name: import dnsmasq.yml
+  import_tasks: dnsmasq.yml
+  when: inventory_hostname != 'github-runner.localhost'
+
+- name: Copy dns functions
+  copy:
+    src: zsh/dns.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/dns.zsh
+
+- name: Makes zsh the cron shell
+  ansible.builtin.cron:
+    name: SHELL
+    env: yes
+    job: /bin/zsh
+
+- name: Setup cron for batt
+  ansible.builtin.cron:
+    name: Batt cron
+    minute: "0,15,30,45"
+    job: ". $HOME/.zshrc; batt cron"
+
+- name: Setup cron for dfh
+  ansible.builtin.cron:
+    name: dfh cron
+    minute: "0,15,30,45"
+    job: ". $HOME/.zshrc; dfh cron"
+
+- name: Setup cron for appcount
+  ansible.builtin.cron:
+    name: apps cron
+    hour: "16"
+    minute: "31"
+    job: ". $HOME/.zshrc; apps cron"

@@ -1,0 +1,112 @@
+---
+- name: install homebrew taps
+  become: true
+  become_user: "{{ brew_user.stdout }}"
+  homebrew_tap:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "homebrew/core"
+    - "homebrew/services"
+    - "homebrew/cask"
+
+- name: install core packages
+  become: true
+  become_user: "{{ brew_user.stdout }}"
+  homebrew:
+    name: [
+      "youtube-dl",
+      "gh",
+      "jq",
+      "wget",
+      "dnsmasq",
+      "gcc",
+      "openssl",
+      "cmake",
+      "git",
+      "git-lfs",
+      "moreutils",
+      "findutils",
+      "gnupg",
+      "grep",
+      "screen",
+      "pigz",
+      "tree",
+      "ffmpeg",
+      "shared-mime-info",
+      "nginx",
+      "graphviz",
+      "node@{{ node_version }}",
+      "yarn",
+      "zsh",
+      "zsh-completions",
+      "zsh-autosuggestions",
+      "zsh-syntax-highlighting",
+      "direnv",
+      "watch",
+      "nmap",
+      "htop",
+      "tmux",
+      "postgresql",
+      "redis"
+    ]
+    state: present
+
+- name: Create directory for installed caskapps
+  file:
+    path: "~{{ brew_user.stdout }}/Applications"
+    state: directory
+    mode: 0775
+
+- name: install cask apps
+  become: true
+  become_user: "{{ brew_user.stdout }}"
+  homebrew_cask:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "hpedrorodrigues/tools/dockutil"
+    - "vlc"
+    - "firefox"
+    - "alfred"
+    - "iterm2"
+    - "vagrant"
+    - "vagrant-manager"
+    - "virtualbox"
+    - "tunnelblick"
+    - "slack"
+    - "visual-studio-code"
+    - "brave-browser"
+    - "google-chrome"
+    - "chromium"
+
+- name: Copy zshenv
+  copy:
+    src: zshenv
+    dest: ~{{ macbook_user.stdout }}/.zshenv
+
+- name: source zshenv so we get /usr/local/bin for npm
+  shell: source ~/.zshenv
+
+- name: Install npm packages
+  npm:
+    name:  "{{ item }}"
+    global: yes
+  with_items:
+    - "vercel"
+    - "netlify-cli"
+    - "railway"
+    - "ts-node"
+    - "typescript"
+    - "browser-sync"
+
+- name: pip installs
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - "jmespath"
+    - "passlib"
+    - "yq"
+
+- name: link node
+  shell: /usr/local/bin/brew link --overwrite node@{{ node_version }}

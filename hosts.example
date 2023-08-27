@@ -1,0 +1,10 @@
+[local]
+localhost ansible_connection=local
+
+[debian]
+raspberrypi
+vultr
+contabo
+
+[macbook]
+kelso

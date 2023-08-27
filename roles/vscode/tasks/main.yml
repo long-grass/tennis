@@ -1,0 +1,92 @@
+---
+- name: install VSCode packages
+  shell: "code --install-extension {{ item }}"
+  with_items:
+    - "astro-build.astro-vscode"
+    - "GitHub.copilot"
+    - "GitHub.vscode-pull-request-github"
+    - "kruemelkatze.vscode-dashboard"
+    - "vsls-contrib.gistfs"
+    - "intal.intalicons"
+    - "pranaygp.vscode-css-peek"
+    - "esbenp.prettier-vscode"
+    - "styled-components.vscode-styled-components"
+    - "abalejr.forest-focus"
+    - "aregghazaryan.glass-ui"
+    - "dbaeumer.vscode-eslint"
+    - "gerane.Theme-zombiesatemyneighbors"
+    - "jmsv.JavaScriptSnippetsStandard"
+    - "tinkertrain.theme-panda"
+    - "johnpapa.vscode-peacock"
+    - "juhakokkonen.py-light"
+    - "karunamurti.haml"
+    - "unifiedjs.vscode-mdx"
+    - "github.github-vscode-theme"
+    - "lintangwisesa.arduino"
+    - "lninl.theme-hbuilderx-soft-green-light"
+    - "luqimin.tiny-light"
+    - "misogi.ruby-rubocop"
+    - "raashida.fixthecode-vs"
+    - "rebornix.ruby"
+    - "selfrefactor.zeppelin-themes"
+    - "sveggiani.vscode-field-lights"
+    - "syler.sass-indented"
+    - "taniarascia.new-moon-vscode"
+    - "teabyii.ayu"
+    - "tristanremy.mirage"
+    - "wingrunr21.vscode-ruby"
+    - "wraith13.unsaved-files-vscode"
+    - "aaron-bond.better-comments"
+    - "eamodio.gitlens"
+    - "dbaeumer.vscode-eslint"
+    - "dart-code.dart-code"
+    - "dart-code.flutter"
+    - "ChakrounAnas.turbo-console-log"
+    - "humao.rest-client"
+    - "wholroyd.jinja"
+
+- name: copy vscode profile darwin
+  copy:
+    src: vscode.json
+    dest: ~{{ macbook_user.stdout }}/Library/Application Support/Code/User/settings.json
+  when: ansible_os_family == "Darwin"
+
+- name: copy vscode profile debian
+  copy:
+    src: vscode.json
+    dest: ~{{ macbook_user.stdout }}/.config/Code/User/settings.json
+  when: ansible_os_family == "Debian"
+
+- name: Create snippets directory
+  file:
+    path:  ~{{ macbook_user.stdout }}/Library/Application Support/Code/User/snippets
+    state: directory
+  when: ansible_os_family == "Darwin"
+
+- name: Copy snippets
+  copy:
+    src: "{{ item }}"
+    dest: ~{{ macbook_user.stdout }}/Library/Application Support/Code/User/snippets
+  with_fileglob:
+    - snippets/*
+  when: ansible_os_family == "Darwin"
+
+- name: Create themes directory
+  file:
+    path:  ~{{ macbook_user.stdout }}/.vscode/themes
+    state: directory
+
+- name: Copy themes
+  copy:
+    src: "{{ item }}"
+    dest: ~{{ macbook_user.stdout }}/.vscode/themes
+  with_fileglob:
+    - themes/*
+
+- name: print role name
+  set_fact:
+    parent_role_name:  "{{ role_name }}"
+
+- name: add version
+  include_role:
+    name: version

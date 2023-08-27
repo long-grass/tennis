@@ -1,0 +1,54 @@
+---
+- name: Create wallpapers directory.
+  file:
+    path: "~{{ macbook_user.stdout }}/wallpapers"
+    state: directory
+
+- name: Copy wallpapers
+  copy:
+    src: "{{ item }}"
+    dest: ~/wallpapers
+  with_fileglob:
+    - wallpapers/*
+
+- name: wallpaper
+  shell: osascript -e 'tell application "Finder" to set desktop picture to POSIX file "/Users/{{ macbook_user.stdout }}/wallpapers/pink.png"'
+  
+- name: Remove superfluous from dock
+  shell: /usr/local/bin/dockutil --remove '{{ item }}' | cat
+  ignore_errors: true
+  with_items:
+    - Mail
+    - TV
+    - News
+    - Music
+    - Podcasts
+    - Calendar
+    - Launchpad
+    - Contacts
+    - Maps
+    - Photos
+    - Messages
+    - FaceTime
+    - Notes
+    - Reminders
+    - App Store
+    - System Preferences
+
+- name: Check if items in dock exist
+  shell: /usr/local/bin/dockutil --find '{{ item.name }}' || /usr/local/bin/dockutil --add '{{ item.path }}'
+  with_items:
+    - name: iTerm
+      path: "/Users/{{ brew_user.stdout }}/Applications/iTerm.app"
+    - name: "Visual Studio Code"
+      path: "/Users/{{ brew_user.stdout }}/Applications/Visual\ Studio\ Code.app"
+    - name: Firefox
+      path: "/Users/{{ brew_user.stdout }}/Applications/Firefox.app"
+
+- name: print role name
+  set_fact:
+    parent_role_name:  "{{ role_name }}"
+
+- name: add version
+  include_role:
+    name: version

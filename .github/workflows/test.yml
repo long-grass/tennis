@@ -1,0 +1,48 @@
+name: Test
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Check Ansible path
+        run: echo 'export PATH="$(python3 -m site --user-base)/bin:$PATH"' >> $GITHUB_ENV
+
+      - name: Installs ansible and pip
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: makes this target
+        run: ansible-playbook thiscomputer.yml -i hosts -e "hostname=github-runner"
+
+      - name: Runs the debug target
+        run: make debug
+
+      - name: runs the terminal target
+        run: make terminal
+
+      - name: runs the functions target
+        run: make functions
+
+      - name: cat zshrc
+        run: cat ~/.macfair/version
+
+      - name: runs the newcomputer target with vars to bypass prompt
+        run: ansible-playbook newcomputer.yml -i hosts -e "target=dox.io37.ch" -e "user=deploy" -e "group=debian"
+
+      - name: source zshrc & run main functions
+        run: source ~/.zshrc && run_all_functions
+        shell: zsh {0}

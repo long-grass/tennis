@@ -1,0 +1,35 @@
+[user]
+# Please adapt and uncomment the following lines:
+{% if git_name.stdout %}
+	name = {{ git_name.stdout }}
+{% else %}
+#	name = name
+{% endif %}
+{% if git_email.stdout %}
+        email = {{ git_email.stdout }}
+{% else %}
+#       email = email
+{% endif %}
+[init]
+        defaultBranch = main
+        templatedir = ~/.config/git
+[alias]
+        br = checkout -b
+        main = ! git checkout main && git pull
+        remot = remote -v
+        changed = whatchanged --format=format:'%C(bold blue)%h %C(bold green)(%ar) %C(blue)%an %C(bold yellow)%d %C(red) %s'
+        branches = ! git branch --no-merge main --format='%(HEAD)%(color:yellow)%(refname:short)|%(color:bold green)%(committerdate:relative)|%(color:blue)%(subject)|%(color:reset)' --color=always | column -ts'|' | head -n 10
+        full = ! git branch --format='%(HEAD)%(color:yellow)%(refname:short)|%(color:bold green)%(committerdate:relative)|%(color:blue)%(subject)|%(color:reset)' --color=always | column -ts'|'
+        park = ! git add . && git commit -m \"wip: parking this here for now\"
+        unpark = !git reset  $(git rev-parse main)
+[push]
+        autoSetupRemote = true
+[core]
+        editor = vi
+        hooksPath = ~/.config/git/hooks
+[commit]
+        template = ~/.config/git/commit-msg-template
+[branch]
+        sort = -authordate
+[fetch]
+	prune = true

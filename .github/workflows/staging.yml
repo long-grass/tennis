@@ -1,0 +1,62 @@
+name: Staging Docs
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  staging-docs:
+    runs-on: ubuntu-latest
+    env:
+      STAGING_URL: asda.io37.ch
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: make a gitconfig
+        run: |
+          echo -e "[user]
+            name = github-runner
+            email = githubrunner@google.fi
+          " > ~/.gitconfig
+
+      - name: is gitconfig there
+        run: cat ~/.gitconfig
+
+      - name: installs the doc site
+        run: npm_config_yes=true npx venlo@latest --appName venlo --language astro --design readme --colorScheme detective
+
+      - name: copies the Docs
+        run: cp -r docs/*md venlo/src/content/docs
+
+      - name: copies top level mds
+        run: for f in *.md; do cp "$f" "venlo/src/content/top/$(echo "$f" | tr '[:upper:]' '[:lower:]' )"; done
+
+      - name: copies top readme to index
+        run: cp README.md venlo/src/content/top/index.md
+
+      - name: Build
+        run: cd venlo && make build
+
+      - name: Create branch.html
+        run: |
+          cp .github/templates/branch.html venlo/dist/branch.html
+          cp .github/templates/workflow.css venlo/dist/workflow.css
+          sed -i 's|\[REPO_NAME\]|'"$GITHUB_REPOSITORY"'|g' venlo/dist/branch.html
+          sed -i 's|\[BRANCH_NAME\]|'"$(echo $GITHUB_REF | sed 's|refs/heads/||')"'|g' venlo/dist/branch.html
+          sed -i 's|\[DATE\]|'"$(date)"'|g' venlo/dist/branch.html
+
+      - name: Rsync
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -a
+          path: venlo/dist/
+          remote_path: "/var/www/html/$STAGING_URL"
+          remote_host: $STAGING_URL
+          remote_user: deploy
+          remote_key: ${{ secrets.DEPLOY_KEY }}

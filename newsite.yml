@@ -1,0 +1,39 @@
+---
+- hosts: localhost
+  connection: local
+
+  vars_prompt:
+    - name: app_name
+      prompt: "Enter url of new site"
+      private: false
+  tasks:
+    - name: Create main yml
+      template:
+        src: template.yml.j2
+        dest: "{{ playbook_dir }}/sites/{{ app_name }}.yml"
+    - name: Create nginx template
+      template:
+        src: template.nginx.conf.j2
+        dest: "{{ playbook_dir }}/sites/files/{{ app_name }}.nginx.conf"
+    - name: append to makefile.
+      template:
+        dest: "{{ playbook_dir }}/sites/makefiles/{{ app_name }}"
+        src: Makefile.j2
+
+    - name: Add target to inventory file.
+      ansible.builtin.lineinfile:
+        path: "{{ playbook_dir }}/hosts"
+        line: "{{ app_name }}"
+        insertafter: "\\[sites\\]"
+
+    - name: Create default site vars directory if doesnt exist
+      file:
+        state: directory
+        path: "{{ playbook_dir }}/group_vars/sites"
+        force: false
+
+    - name: Create default site vars if doesnt exit
+      copy:
+        content: "ansible_user: deploy"
+        dest: "{{ playbook_dir }}/group_vars/sites/default.yml"
+        force: false

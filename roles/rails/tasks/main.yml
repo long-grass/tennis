@@ -1,0 +1,71 @@
+---
+- name: Clone Rbenv
+  git: repo=https://github.com/rbenv/rbenv dest=~{{ macbook_user.stdout }}/.rbenv
+
+- name: Clone rbenv build
+  git: repo=https://github.com/rbenv/ruby-build dest=~{{ macbook_user.stdout }}/.rbenv/plugins/ruby-build
+
+- name: Copy zsh rails
+  copy:
+    src: zsh/rails.zsh
+    dest: ~{{ macbook_user.stdout }}/.zsh/rails.zsh
+
+- name: Add Rbenv to .zshrc
+  lineinfile:
+    dest: "~{{ macbook_user.stdout }}/.zshrc"
+    regexp: 'source \$HOME/.zsh/rails'
+    line: 'source $HOME/.zsh/rails'
+    state: present
+
+- name: Clone rbenv vars
+  git: repo=https://github.com/rbenv/rbenv-vars dest=~{{ macbook_user.stdout }}/.rbenv/plugins/rbenv-vars
+
+- name: check ruby {{ ruby_version }} is installed for system
+  shell: "~{{ macbook_user.stdout }}/.rbenv/bin/rbenv versions | grep {{ruby_version}}"
+  register: ruby_installed
+  changed_when: false
+  ignore_errors: yes
+  check_mode: no
+
+- name: rbenv install ruby
+  command: "~{{ macbook_user.stdout }}/.rbenv/bin/rbenv install --verbose {{ruby_version}}"
+  when:
+    - ruby_installed.rc != 0
+  async: 3600
+  poll: 10
+
+- name: check if current system ruby version is {{ ruby_version }}
+  shell: "~{{ macbook_user.stdout }}/.rbenv/bin/rbenv version | cut -d ' ' -f 1 | grep -Fx '{{ ruby_version }}'"
+  register: current_ruby_selected
+  changed_when: false
+  ignore_errors: yes
+  check_mode: no
+
+- name: rbenv set global ruby version and rehash
+  command: "~{{ macbook_user.stdout }}/.rbenv/bin/rbenv global {{ruby_version}} && rbenv rehash"
+  when:
+    - current_ruby_selected.rc != 0
+
+- name: 'install bundler v2'
+  command: "~{{ macbook_user.stdout }}/.rbenv/shims/gem install bundler -v 2.2.23"
+
+- name: 'install rails 7'
+  command: "~{{ macbook_user.stdout }}/.rbenv/shims/gem install rails"
+
+- name: 'install rails 6'
+  command: "~{{ macbook_user.stdout }}/.rbenv/shims/gem install rails -v 6.1.6.1"
+
+- name: 'rehash'
+  command: "~{{ macbook_user.stdout }}/.rbenv/bin/rbenv rehash"
+
+- name: import elastic search
+  import_tasks: elastic.yml
+  when: ansible_os_family == "Darwin"
+
+- name: print role name
+  set_fact:
+    parent_role_name:  "{{ role_name }}"
+
+- name: add version
+  include_role:
+    name: version
